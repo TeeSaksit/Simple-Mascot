@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mochi - เพื่อนตัวจิ๋วอินเทอร์แอคทีฟ</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Google Fonts: Prompt & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tone.js for Web Audio cute effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+  <style>
+    body {
+      font-family: 'Prompt', 'Inter', sans-serif;
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* Soft breathing floating motion */
+    @keyframes float-idle {
+      0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-8px) rotate(0.5deg);
+      }
+    }
+
+    @keyframes shadow-breathe {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.28;
+      }
+      50% {
+        transform: scale(0.88);
+        opacity: 0.16;
+      }
+    }
+
+    @keyframes jump-happy {
+      0%, 100% { transform: translateY(0) scale(1, 1); }
+      30% { transform: translateY(6px) scale(1.08, 0.92); }
+      60% { transform: translateY(-24px) scale(0.94, 1.06); }
+      80% { transform: translateY(0) scale(1.03, 0.97); }
+    }
+
+    @keyframes wiggle-tickle {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      20% { transform: rotate(-8deg) scale(1.05); }
+      40% { transform: rotate(8deg) scale(1.05); }
+      60% { transform: rotate(-6deg) scale(1.05); }
+      80% { transform: rotate(6deg) scale(1.05); }
+    }
+
+    @keyframes pop-heart {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(0.6);
+      }
+      100% {
+        opacity: 0;
+        transform: translateY(-70px) scale(1.3) rotate(15deg);
+      }
+    }
+
+    @keyframes chew-motion {
+      0%, 100% { transform: scale(1, 1); }
+      50% { transform: scale(1.06, 0.94); }
+    }
+
+    .mascot-container {
+      animation: float-idle 3.6s ease-in-out infinite;
+      transform-origin: bottom center;
+    }
+
+    .mascot-shadow {
+      animation: shadow-breathe 3.6s ease-in-out infinite;
+    }
+
+    .jumping {
+      animation: jump-happy 0.55s ease-out !important;
+    }
+
+    .wiggling {
+      animation: wiggle-tickle 0.45s ease-in-out !important;
+    }
+
+    .chewing {
+      animation: chew-motion 0.25s ease-in-out infinite !important;
+    }
+
+    /* Eye pupil transition */
+    .eye-pupil {
+      transition: transform 0.08s cubic-bezier(0.2, 0, 0.2, 1);
+    }
+
+    /* Floating particles */
+    .heart-fx {
+      position: absolute;
+      pointer-events: none;
+      animation: pop-heart 1s ease-out forwards;
+      font-size: 1.5rem;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.5);
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 transition-colors duration-500 flex flex-col items-center justify-between p-3 sm:p-6 select-none overflow-x-hidden">
+
+  <header class="w-full max-w-md mx-auto flex items-center justify-between py-2 px-1">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-2xl bg-amber-400/20 text-amber-500 flex items-center justify-center font-bold text-lg border border-amber-300/40 shadow-sm">
+        ✨
+      </div>
+      <div>
+        <h1 class="font-bold text-lg tracking-tight text-slate-800 leading-none">น้องโมจิ (Mochi)</h1>
+        <p class="text-xs text-slate-500 font-medium">เพื่อนตัวจิ๋วพร้อมเล่นกับคุณ</p>
+      </div>
+    </div>
+
+    <!-- Sound & Reset controls -->
+    <div class="flex items-center gap-1.5 bg-white/80 backdrop-blur border border-slate-200/80 rounded-2xl p-1 shadow-sm">
+      <button id="soundToggleBtn" class="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition" title="เปิด/ปิดเสียง" aria-label="Toggle Sound">
+        <svg id="soundIconOn" class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+        </svg>
+        <svg id="soundIconOff" class="w-5 h-5 text-slate-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"/>
+        </svg>
+      </button>
+
+      <button id="resetMascotBtn" class="p-2 rounded-xl text-slate-500 hover:text-rose-500 hover:bg-rose-50 transition" title="รีเซ็ตค่าสถานะ" aria-label="Reset State">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="w-full max-w-md mx-auto flex-1 flex flex-col items-center justify-center gap-4 my-2">
+    <!-- Status Meters Card -->
+    <div class="w-full bg-white/90 backdrop-blur rounded-3xl p-3.5 border border-slate-200/70 shadow-sm flex items-center justify-between gap-3 text-xs font-medium text-slate-600">
+      <!-- Happiness -->
+      <div class="flex-1 flex flex-col gap-1">
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="flex items-center gap-1 font-semibold text-rose-500">❤️ ความสุข</span>
+          <span id="labelHappiness" class="font-bold text-slate-700">80%</span>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="barHappiness" class="h-full bg-gradient-to-r from-pink-400 to-rose-500 rounded-full transition-all duration-500" style="width: 80%"></div>
+        </div>
+      </div>
+
+      <!-- Energy -->
+      <div class="flex-1 flex flex-col gap-1">
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="flex items-center gap-1 font-semibold text-amber-500">⚡ พลังงาน</span>
+          <span id="labelEnergy" class="font-bold text-slate-700">90%</span>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="barEnergy" class="h-full bg-gradient-to-r from-amber-400 to-yellow-500 rounded-full transition-all duration-500" style="width: 90%"></div>
+        </div>
+      </div>
+
+      <!-- Fullness/Hunger -->
+      <div class="flex-1 flex flex-col gap-1">
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="flex items-center gap-1 font-semibold text-emerald-500">🍙 ความอิ่ม</span>
+          <span id="labelFullness" class="font-bold text-slate-700">70%</span>
+        </div>
+        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div id="barFullness" class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500" style="width: 70%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mascot Playground Stage -->
+    <div id="stageArea" class="relative w-full aspect-square max-w-[340px] flex flex-col items-center justify-center cursor-pointer transition-transform select-none">
+      
+      <!-- Speech bubble -->
+      <div id="speechBubble" class="absolute top-2 left-1/2 -translate-x-1/2 z-20 bg-white/95 backdrop-blur-md px-4 py-2 rounded-2xl shadow-lg border border-slate-200/90 text-xs sm:text-sm font-medium text-slate-700 flex items-center gap-1.5 transition-all duration-300 max-w-[85%] text-center">
+        <span id="speechText">สวัสดีฮะ! เอาเมาส์มาเล่นใกล้ๆ หนูสิ~</span>
+        <div class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-b border-r border-slate-200 rotate-45"></div>
+      </div>
+
+      <!-- Mascot Wrapper for animations -->
+      <div id="mascotWrapper" class="mascot-container relative z-10 w-64 h-64 flex items-center justify-center">
+        <!-- SVG Vector Character -->
+        <svg id="mascotSvg" viewBox="0 0 240 240" class="w-full h-full drop-shadow-md overflow-visible">
+          <defs>
+            <!-- Body Gradient -->
+            <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FFFDF7" />
+              <stop offset="60%" stop-color="#FFF0D4" />
+              <stop offset="100%" stop-color="#FFE4B8" />
+            </linearGradient>
+
+            <!-- Inner Ear Gradient -->
+            <linearGradient id="innerEarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stop-color="#FFB2C8" />
+              <stop offset="100%" stop-color="#FF8EAE" />
+            </linearGradient>
+            
+            <!-- Cheek Gradient -->
+            <radialGradient id="blushGrad">
+              <stop offset="0%" stop-color="#FF6B93" stop-opacity="0.65" />
+              <stop offset="100%" stop-color="#FF6B93" stop-opacity="0" />
+            </radialGradient>
+          </defs>
+
+          <!-- Left Ear -->
+          <g id="leftEar" class="transition-transform duration-300 origin-[65px_65px]">
+            <circle cx="65" cy="65" r="30" fill="url(#bodyGrad)" stroke="#F0D3A2" stroke-width="2.5" />
+            <circle cx="65" cy="65" r="17" fill="url(#innerEarGrad)" opacity="0.85" />
+          </g>
+
+          <!-- Right Ear -->
+          <g id="rightEar" class="transition-transform duration-300 origin-[175px_65px]">
+            <circle cx="175" cy="65" r="30" fill="url(#bodyGrad)" stroke="#F0D3A2" stroke-width="2.5" />
+            <circle cx="175" cy="65" r="17" fill="url(#innerEarGrad)" opacity="0.85" />
+          </g>
+
+          <!-- Main Soft Rounded Body -->
+          <path id="bodyPath" d="M 48 135 C 48 75, 80 50, 120 50 C 160 50, 192 75, 192 135 C 192 195, 168 208, 120 208 C 72 208, 48 195, 48 135 Z"
+                fill="url(#bodyGrad)" stroke="#F2D5A4" stroke-width="2.5" />
+
+          <!-- Soft Belly patch -->
+          <ellipse cx="120" cy="155" rx="46" ry="38" fill="#FFFFFF" opacity="0.8" />
+
+          <!-- Cheeks Blush -->
+          <circle id="leftBlush" cx="72" cy="140" r="15" fill="url(#blushGrad)" class="transition-opacity duration-300" opacity="0.75" />
+          <circle id="rightBlush" cx="168" cy="140" r="15" fill="url(#blushGrad)" class="transition-opacity duration-300" opacity="0.75" />
+
+          <!-- Left Eye Group -->
+          <g id="leftEyeGroup" class="origin-[90px_118px]">
+            <!-- Sclera / Eye White -->
+            <ellipse cx="90" cy="118" rx="14" ry="18" fill="#2E241E" />
+            <!-- Moving Pupil Highlight -->
+            <g id="leftPupil" class="eye-pupil">
+              <circle cx="92" cy="114" r="6" fill="#FFFFFF" />
+              <circle cx="87" cy="122" r="2.5" fill="#FFFFFF" opacity="0.75" />
+            </g>
+            <!-- Eyelid for blinking -->
+            <path id="leftEyelid" d="M 74 100 Q 90 100 106 100 L 106 100 Q 90 100 74 100 Z" fill="#FFE8C0" style="transition: d 0.1s ease-in-out;" />
+          </g>
+
+          <!-- Right Eye Group -->
+          <g id="rightEyeGroup" class="origin-[150px_118px]">
+            <!-- Sclera / Eye White -->
+            <ellipse cx="150" cy="118" rx="14" ry="18" fill="#2E241E" />
+            <!-- Moving Pupil Highlight -->
+            <g id="rightPupil" class="eye-pupil">
+              <circle cx="152" cy="114" r="6" fill="#FFFFFF" />
+              <circle cx="147" cy="122" r="2.5" fill="#FFFFFF" opacity="0.75" />
+            </g>
+            <!-- Eyelid for blinking -->
+            <path id="rightEyelid" d="M 134 100 Q 150 100 166 100 L 166 100 Q 150 100 134 100 Z" fill="#FFE8C0" style="transition: d 0.1s ease-in-out;" />
+          </g>
+
+          <!-- Cute Little Nose -->
+          <ellipse cx="120" cy="124" rx="3.5" ry="2.5" fill="#7C5D44" />
+
+          <!-- Dynamic Mouth (Smile / Eating / Sleep / Surprised) -->
+          <g id="mouthGroup">
+            <!-- Normal Smile Path -->
+            <path id="mouthSmile" d="M 111 133 Q 115 138 120 134 Q 125 138 129 133" fill="none" stroke="#684A33" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" />
+            
+            <!-- Open Happy Mouth (Hidden by default) -->
+            <path id="mouthOpen" d="M 112 133 Q 120 152 128 133 Z" fill="#E85973" stroke="#684A33" stroke-width="2" class="hidden" />
+
+            <!-- Surprised 'O' Mouth (Hidden by default) -->
+            <ellipse id="mouthSurprise" cx="120" cy="136" rx="5" ry="7" fill="#684A33" class="hidden" />
+
+            <!-- Wavy / Tickled Mouth (Hidden by default) -->
+            <path id="mouthWavy" d="M 110 134 Q 115 129 120 134 Q 125 139 130 134" fill="none" stroke="#684A33" stroke-width="2.8" stroke-linecap="round" class="hidden" />
+          </g>
+
+          <!-- Paws -->
+          <g id="leftPaw" class="transition-transform duration-200">
+            <ellipse cx="80" cy="172" rx="14" ry="11" fill="url(#bodyGrad)" stroke="#F2D5A4" stroke-width="2" />
+          </g>
+          <g id="rightPaw" class="transition-transform duration-200">
+            <ellipse cx="160" cy="172" rx="14" ry="11" fill="url(#bodyGrad)" stroke="#F2D5A4" stroke-width="2" />
+          </g>
+
+          <!-- Sleeping Zzz Indicator (SVG group) -->
+          <g id="zzzGroup" class="hidden text-indigo-400 font-black" style="transform: translate(160px, 60px);">
+            <text x="0" y="0" font-size="16" fill="#818CF8" font-family="sans-serif">z</text>
+            <text x="10" y="-12" font-size="20" fill="#6366F1" font-family="sans-serif">Z</text>
+            <text x="24" y="-28" font-size="24" fill="#4F46E5" font-family="sans-serif">Z</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Mascot Floor Shadow -->
+      <div class="mascot-shadow w-44 h-7 bg-slate-400/30 rounded-full blur-sm -mt-2"></div>
+      
+      <!-- Tap hint for mobile -->
+      <p class="mt-3 text-[11px] text-slate-400 font-medium tracking-wide flex items-center gap-1">
+        <span>👆 แตะ ลูบหัว หรือสะกิดน้องดูสิ</span>
+      </p>
+    </div>
+
+    <!-- Action Control Pad -->
+    <div class="w-full bg-white rounded-3xl p-4 border border-slate-200/80 shadow-sm flex flex-col gap-3">
+      <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider px-1 flex items-center justify-between">
+        <span>กิจกรรมกับโมจิ</span>
+        <span id="moodBadge" class="normal-case bg-emerald-50 text-emerald-600 text-[11px] px-2.5 py-0.5 rounded-full font-medium border border-emerald-200">
+          อารมณ์: ร่าเริง 😄
+        </span>
+      </div>
+
+      <!-- Quick Action Buttons Grid -->
+      <div class="grid grid-cols-4 gap-2">
+        <!-- Pet / Caress -->
+        <button id="btnPet" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 hover:border-rose-200 transition active:scale-95 group">
+          <span class="text-2xl mb-1 group-hover:scale-125 transition-transform">🫳</span>
+          <span class="text-[11px] font-semibold">ลูบหัว</span>
+        </button>
+
+        <!-- Feed Snack -->
+        <button id="btnFeed" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-amber-50 text-slate-700 hover:text-amber-600 border border-slate-200 hover:border-amber-200 transition active:scale-95 group">
+          <span class="text-2xl mb-1 group-hover:scale-125 transition-transform">🍪</span>
+          <span class="text-[11px] font-semibold">ให้ขนม</span>
+        </button>
+
+        <!-- Tickle / Play -->
+        <button id="btnTickle" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-sky-50 text-slate-700 hover:text-sky-600 border border-slate-200 hover:border-sky-200 transition active:scale-95 group">
+          <span class="text-2xl mb-1 group-hover:scale-125 transition-transform">🎉</span>
+          <span class="text-[11px] font-semibold">จั๊กจี้</span>
+        </button>
+
+        <!-- Sleep / Wake Toggle -->
+        <button id="btnSleep" class="flex flex-col items-center justify-center p-2.5 rounded-2xl bg-slate-50 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 transition active:scale-95 group">
+          <span id="sleepIcon" class="text-2xl mb-1 group-hover:scale-125 transition-transform">💤</span>
+          <span id="sleepLabel" class="text-[11px] font-semibold">กล่อมนอน</span>
+        </button>
+      </div>
+
+      <!-- Chat with Mascot Input -->
+      <form id="chatForm" class="flex items-center gap-2 mt-1">
+        <input 
+          id="chatInput" 
+          type="text" 
+          maxlength="60"
+          placeholder="ทักทายหรือคุยอะไรกับโมจิดีนะ..." 
+          class="flex-1 bg-slate-100 hover:bg-slate-100/80 focus:bg-white text-slate-700 text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl border border-transparent focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-200 transition"
+        />
+        <button 
+          type="submit" 
+          class="bg-amber-400 hover:bg-amber-500 active:bg-amber-600 text-slate-900 font-semibold px-4 py-2.5 rounded-2xl text-xs sm:text-sm transition flex items-center justify-center shadow-sm active:scale-95">
+          ส่ง 💬
+        </button>
+      </form>
+    </div>
+  </main>
+
+  <footer class="w-full max-w-md mx-auto text-center py-2 text-xs text-slate-400">
+    <p>โมจิเวอร์ชัน 1.0 • สร้างสรรค์ด้วยความสดใส 🌸</p>
+  </footer>
+
+  <script>
+    /* ----------------------------------------------------
+       State Management & Setup
+       ---------------------------------------------------- */
+    const state = {
+      happiness: 80,
+      energy: 90,
+      fullness: 70,
+      isSleeping: false,
+      isEating: false,
+      soundEnabled: true,
+      lastInteraction: Date.now(),
+      currentMood: 'happy' // happy, excited, sleepy, eating, tickled
+    };
+
+    // DOM Elements Cache
+    const stageArea = document.getElementById('stageArea');
+    const mascotWrapper = document.getElementById('mascotWrapper');
+    const speechBubble = document.getElementById('speechBubble');
+    const speechText = document.getElementById('speechText');
+    const moodBadge = document.getElementById('moodBadge');
+
+    // Meters
+    const barHappiness = document.getElementById('barHappiness');
+    const barEnergy = document.getElementById('barEnergy');
+    const barFullness = document.getElementById('barFullness');
+    const labelHappiness = document.getElementById('labelHappiness');
+    const labelEnergy = document.getElementById('labelEnergy');
+    const labelFullness = document.getElementById('labelFullness');
+
+    // SVG elements
+    const leftPupil = document.getElementById('leftPupil');
+    const rightPupil = document.getElementById('rightPupil');
+    const leftEyelid = document.getElementById('leftEyelid');
+    const rightEyelid = document.getElementById('rightEyelid');
+    const mouthSmile = document.getElementById('mouthSmile');
+    const mouthOpen = document.getElementById('mouthOpen');
+    const mouthSurprise = document.getElementById('mouthSurprise');
+    const mouthWavy = document.getElementById('mouthWavy');
+    const leftBlush = document.getElementById('leftBlush');
+    const rightBlush = document.getElementById('rightBlush');
+    const leftEar = document.getElementById('leftEar');
+    const rightEar = document.getElementById('rightEar');
+    const zzzGroup = document.getElementById('zzzGroup');
+
+    // Controls
+    const soundToggleBtn = document.getElementById('soundToggleBtn');
+    const soundIconOn = document.getElementById('soundIconOn');
+    const soundIconOff = document.getElementById('soundIconOff');
+    const resetMascotBtn = document.getElementById('resetMascotBtn');
+    const btnPet = document.getElementById('btnPet');
+    const btnFeed = document.getElementById('btnFeed');
+    const btnTickle = document.getElementById('btnTickle');
+    const btnSleep = document.getElementById('btnSleep');
+    const sleepIcon = document.getElementById('sleepIcon');
+    const sleepLabel = document.getElementById('sleepLabel');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+
+    // Audio synthesizer initialization with user gesture guard
+    let audioStarted = false;
+    let synth, bubbleSynth;
+
+    function initAudio() {
+      if (audioStarted) return;
+      try {
+        synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.01, decay: 0.15, sustain: 0.05, release: 0.2 }
+        }).toDestination();
+        synth.volume.value = -8;
+
+        bubbleSynth = new Tone.MembraneSynth({
+          pitchDecay: 0.05,
+          octaves: 3,
+          oscillator: { type: 'sine' },
+          envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 }
+        }).toDestination();
+        bubbleSynth.volume.value = -6;
+
+        Tone.start();
+        audioStarted = true;
+      } catch (err) {
+        console.warn('Tone.js init suppressed:', err);
+      }
+    }
+
+    function playSound(type) {
+      if (!state.soundEnabled) return;
+      initAudio();
+      if (!audioStarted || !synth) return;
+
+      try {
+        const now = Tone.now();
+        if (type === 'happy') {
+          synth.triggerAttackRelease('E5', '16n', now);
+          synth.triggerAttackRelease('G5', '16n', now + 0.08);
+          synth.triggerAttackRelease('C6', '8n', now + 0.16);
+        } else if (type === 'eat') {
+          bubbleSynth.triggerAttackRelease('C3', '8n', now);
+          bubbleSynth.triggerAttackRelease('G3', '8n', now + 0.12);
+        } else if (type === 'tickle') {
+          synth.triggerAttackRelease('A5', '32n', now);
+          synth.triggerAttackRelease('B5', '32n', now + 0.06);
+          synth.triggerAttackRelease('C#6', '32n', now + 0.12);
+        } else if (type === 'sleep') {
+          synth.triggerAttackRelease('G4', '8n', now);
+          synth.triggerAttackRelease('E4', '8n', now + 0.2);
+          synth.triggerAttackRelease('C4', '4n', now + 0.4);
+        } else if (type === 'wake') {
+          synth.triggerAttackRelease('C5', '16n', now);
+          synth.triggerAttackRelease('E5', '16n', now + 0.08);
+          synth.triggerAttackRelease('G5', '8n', now + 0.16);
+        } else if (type === 'chat') {
+          synth.triggerAttackRelease('F5', '16n', now);
+          synth.triggerAttackRelease('A5', '16n', now + 0.09);
+        }
+      } catch (e) {
+        // Fallback gracefully if audio context wasn't ready
+      }
+    }
+
+    // Eye tracking based on cursor or touch
+    function updateEyeTracking(clientX, clientY) {
+      if (state.isSleeping) return;
+
+      const rect = stageArea.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      const deltaX = clientX - centerX;
+      const deltaY = clientY - centerY;
+
+      // Distance limit for eye pupil
+      const maxDistance = 6.5;
+      const angle = Math.atan2(deltaY, deltaX);
+      const dist = Math.min(maxDistance, Math.hypot(deltaX, deltaY) / 18);
+
+      const moveX = Math.cos(angle) * dist;
+      const moveY = Math.sin(angle) * dist;
+
+      leftPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+      rightPupil.style.transform = `translate(${moveX}px, ${moveY}px)`;
+
+      // Ears tilt slightly towards attention
+      const earTilt = Math.max(-8, Math.min(8, deltaX * 0.04));
+      leftEar.style.transform = `rotate(${earTilt * 0.7}deg)`;
+      rightEar.style.transform = `rotate(${earTilt * 0.7}deg)`;
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      updateEyeTracking(e.clientX, e.clientY);
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (e.touches && e.touches.length > 0) {
+        updateEyeTracking(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    }, { passive: true });
+
+    // Eye blinking logic
+    function blink() {
+      if (state.isSleeping) return;
+
+      // Closed lid path
+      leftEyelid.setAttribute('d', 'M 74 100 Q 90 136 106 100 L 106 138 Q 90 138 74 138 Z');
+      rightEyelid.setAttribute('d', 'M 134 100 Q 150 136 166 100 L 166 138 Q 150 138 134 138 Z');
+
+      setTimeout(() => {
+        // Open lid path
+        if (!state.isSleeping) {
+          leftEyelid.setAttribute('d', 'M 74 100 Q 90 100 106 100 L 106 100 Q 90 100 74 100 Z');
+          rightEyelid.setAttribute('d', 'M 134 100 Q 150 100 166 100 L 166 100 Q 150 100 134 100 Z');
+        }
+      }, 160);
+
+      // Random next blink interval
+      const nextBlink = Math.random() * 3200 + 2000;
+      setTimeout(blink, nextBlink);
+    }
+    setTimeout(blink, 2500);
+
+    let speechTimeout;
+    function say(message, duration = 3000) {
+      speechText.textContent = message;
+      speechBubble.classList.remove('opacity-0', 'scale-90');
+      speechBubble.classList.add('opacity-100', 'scale-100');
+
+      clearTimeout(speechTimeout);
+      speechTimeout = setTimeout(() => {
+        if (!state.isSleeping) {
+          speechText.textContent = 'มองตามเมาส์ตลอดเลยนะ~';
+        }
+      }, duration);
+    }
+
+    function setMouth(mouthType) {
+      mouthSmile.classList.add('hidden');
+      mouthOpen.classList.add('hidden');
+      mouthSurprise.classList.add('hidden');
+      mouthWavy.classList.add('hidden');
+
+      if (mouthType === 'smile') mouthSmile.classList.remove('hidden');
+      else if (mouthType === 'open') mouthOpen.classList.remove('hidden');
+      else if (mouthType === 'surprise') mouthSurprise.classList.remove('hidden');
+      else if (mouthType === 'wavy') mouthWavy.classList.remove('hidden');
+    }
+
+    function createParticle(symbol = '💖') {
+      const el = document.createElement('div');
+      el.className = 'heart-fx';
+      el.textContent = symbol;
+      
+      const offsetX = (Math.random() - 0.5) * 80;
+      const offsetY = (Math.random() - 0.5) * 40;
+      el.style.left = `calc(50% + ${offsetX}px)`;
+      el.style.top = `calc(40% + ${offsetY}px)`;
+
+      stageArea.appendChild(el);
+      setTimeout(() => el.remove(), 1000);
+    }
+
+    function updateMeters() {
+      // Clamping values between 0 and 100
+      state.happiness = Math.max(0, Math.min(100, state.happiness));
+      state.energy = Math.max(0, Math.min(100, state.energy));
+      state.fullness = Math.max(0, Math.min(100, state.fullness));
+
+      barHappiness.style.width = `${state.happiness}%`;
+      barEnergy.style.width = `${state.energy}%`;
+      barFullness.style.width = `${state.fullness}%`;
+
+      labelHappiness.textContent = `${Math.round(state.happiness)}%`;
+      labelEnergy.textContent = `${Math.round(state.energy)}%`;
+      labelFullness.textContent = `${Math.round(state.fullness)}%`;
+
+      // Update Mood Badge
+      if (state.isSleeping) {
+        moodBadge.textContent = 'อารมณ์: หลับฝันดี 💤';
+        moodBadge.className = 'normal-case bg-indigo-50 text-indigo-600 text-[11px] px-2.5 py-0.5 rounded-full font-medium border border-indigo-200';
+      } else if (state.happiness >= 80) {
+        moodBadge.textContent = 'อารมณ์: มีความสุขมาก! 💖';
+        moodBadge.className = 'normal-case bg-rose-50 text-rose-600 text-[11px] px-2.5 py-0.5 rounded-full font-medium border border-rose-200';
+      } else if (state.fullness <= 30) {
+        moodBadge.textContent = 'อารมณ์: หิวแล้วจ้า 🥺';
+        moodBadge.className = 'normal-case bg-amber-50 text-amber-600 text-[11px] px-2.5 py-0.5 rounded-full font-medium border border-amber-200';
+      } else {
+        moodBadge.textContent = 'อารมณ์: ปกติดี ☺️';
+        moodBadge.className = 'normal-case bg-slate-100 text-slate-700 text-[11px] px-2.5 py-0.5 rounded-full font-medium border border-slate-200';
+      }
+    }
+
+    // Pet Action
+    function petMascot() {
+      if (state.isSleeping) {
+        wakeUp();
+        return;
+      }
+      state.happiness = Math.min(100, state.happiness + 8);
+      updateMeters();
+      playSound('happy');
+
+      setMouth('smile');
+      leftBlush.setAttribute('opacity', '1');
+      rightBlush.setAttribute('opacity', '1');
+      createParticle('🌸');
+      createParticle('✨');
+
+      mascotWrapper.classList.remove('jumping', 'wiggling');
+      void mascotWrapper.offsetWidth; // Trigger reflow
+      mascotWrapper.classList.add('jumping');
+
+      const petQuotes = ['งื้ออ ลูบหัวแล้วฟินจัง~', 'ชอบให้ลูบหัวที่สุดเลย!', 'อารมณ์ดีขึ้นเยอะเลยฮะ ✨', 'รักเจ้านายที่สุด!'];
+      say(petQuotes[Math.floor(Math.random() * petQuotes.length)]);
+
+      setTimeout(() => {
+        mascotWrapper.classList.remove('jumping');
+        leftBlush.setAttribute('opacity', '0.75');
+        rightBlush.setAttribute('opacity', '0.75');
+      }, 600);
+    }
+
+    // Feed Action
+    function feedMascot() {
+      if (state.isSleeping) {
+        say('งึมงำ... โมจิหลับอยู่ ขอกินในฝันก่อนนะ 💤');
+        return;
+      }
+      if (state.fullness >= 98) {
+        say('อิ่มพุงจะแตกแล้วฮับ ไม่ไหวแย้วว! 😋');
+        playSound('happy');
+        return;
+      }
+
+      state.fullness = Math.min(100, state.fullness + 18);
+      state.happiness = Math.min(100, state.happiness + 4);
+      updateMeters();
+
+      playSound('eat');
+      setMouth('open');
+      mascotWrapper.classList.add('chewing');
+      createParticle('🍪');
+      createParticle('✨');
+
+      say('หง่ำๆๆ! อร่อยมากก ขอบคุณฮ้าฟฟ 🍪');
+
+      setTimeout(() => {
+        setMouth('smile');
+        mascotWrapper.classList.remove('chewing');
+      }, 900);
+    }
+
+    // Tickle Action
+    function tickleMascot() {
+      if (state.isSleeping) {
+        wakeUp();
+      }
+      state.happiness = Math.min(100, state.happiness + 6);
+      state.energy = Math.max(10, state.energy - 3);
+      updateMeters();
+
+      playSound('tickle');
+      setMouth('wavy');
+      createParticle('😆');
+
+      mascotWrapper.classList.remove('wiggling', 'jumping');
+      void mascotWrapper.offsetWidth;
+      mascotWrapper.classList.add('wiggling');
+
+      const tickleQuotes = ['ฮ่าๆๆ จั๊กจี้จังเลยยยย พอแย้ววว 🤣', 'จึ๊กๆ 5555 โมจิทนไม่ไหวแย้ว!', 'อย่าน้าาา ตรงนั้นบ้าจี้! 😆'];
+      say(tickleQuotes[Math.floor(Math.random() * tickleQuotes.length)]);
+
+      setTimeout(() => {
+        mascotWrapper.classList.remove('wiggling');
+        setMouth('smile');
+      }, 500);
+    }
+
+    // Sleep / Wake Toggle
+    function toggleSleep() {
+      if (state.isSleeping) {
+        wakeUp();
+      } else {
+        putToSleep();
+      }
+    }
+
+    function putToSleep() {
+      state.isSleeping = true;
+      playSound('sleep');
+      sleepIcon.textContent = '☀️';
+      sleepLabel.textContent = 'ปลุกน้อง';
+      btnSleep.classList.add('bg-indigo-100', 'text-indigo-700', 'border-indigo-300');
+
+      // Close eyes fully
+      leftEyelid.setAttribute('d', 'M 74 100 Q 90 136 106 100 L 106 138 Q 90 138 74 138 Z');
+      rightEyelid.setAttribute('d', 'M 134 100 Q 150 136 166 100 L 166 138 Q 150 138 134 138 Z');
+      setMouth('smile');
+      zzzGroup.classList.remove('hidden');
+
+      say('คร่อกกก... ฝันดีราตรีสวัสดิ์ฮะ 💤', 4000);
+      updateMeters();
+    }
+
+    function wakeUp() {
+      state.isSleeping = false;
+      playSound('wake');
+      sleepIcon.textContent = '💤';
+      sleepLabel.textContent = 'กล่อมนอน';
+      btnSleep.classList.remove('bg-indigo-100', 'text-indigo-700', 'border-indigo-300');
+
+      // Open eyes
+      leftEyelid.setAttribute('d', 'M 74 100 Q 90 100 106 100 L 106 100 Q 90 100 74 100 Z');
+      rightEyelid.setAttribute('d', 'M 134 100 Q 150 100 166 100 L 166 100 Q 150 100 134 100 Z');
+      zzzGroup.classList.add('hidden');
+
+      mascotWrapper.classList.remove('jumping');
+      void mascotWrapper.offsetWidth;
+      mascotWrapper.classList.add('jumping');
+
+      state.energy = Math.min(100, state.energy + 20);
+      updateMeters();
+      say('ง้าววว ตื่นแย้วฮะ! วันนี้มีอะไรให้เล่นบ้าง? ☀️');
+
+      setTimeout(() => mascotWrapper.classList.remove('jumping'), 600);
+    }
+
+    // Conversational smart replies
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = chatInput.value.trim().toLowerCase();
+      if (!query) return;
+
+      chatInput.value = '';
+      if (state.isSleeping) wakeUp();
+
+      playSound('chat');
+      createParticle('💬');
+
+      // Simple keyword matching for interactive mascot responses
+      let reply = '';
+      if (query.includes('ชื่อ') || query.includes('ใคร')) {
+        reply = 'หนูชื่อโมจิฮับ! ก้อนแป้งมีชีวิตที่เป็นเพื่อนคุณ ✨';
+      } else if (query.includes('รัก') || query.includes('ชอบ')) {
+        reply = 'โมจิก็รักคุณที่สุดในสามโลกเลยยย 💖';
+        createParticle('❤️');
+      } else if (query.includes('หิว') || query.includes('กิน')) {
+        reply = 'ถ้าหิว แวะกดปุ่ม "ให้ขนม" ด้านล่างมาป้อนหนูด้วยน้า 🍪';
+      } else if (query.includes('สวัสดี') || query.includes('หวัดดี') || query.includes('ดีจ้า')) {
+        reply = 'สวัสดีคร้าบ! วันนี้เป็นยังไงบ้าง เหนื่อยมั้ยฮะ? 😊';
+      } else if (query.includes('เหนื่อย') || query.includes('ท้อ')) {
+        reply = 'กอดๆ น้าา พักผ่อนหน่อยนะ โมจิอยู่ข้างๆ เสมอ! 🧸';
+      } else if (query.includes('เต้น') || query.includes('โชว์')) {
+        mascotWrapper.classList.add('wiggling');
+        setTimeout(() => mascotWrapper.classList.remove('wiggling'), 800);
+        reply = 'ดุ๊กดิ๊กๆ! โมจิเต้นเก่งมั้ยฮะ? 💃';
+      } else {
+        const genericReplies = [
+          `"${query}" เหรอฮะ ฟังดูน่าสนใจจังเลย! 😄`,
+          'โมจิชอบคุยกับคุณที่สุดเลย เล่าอีกสิฮับ!',
+          'เย่ๆ ดีใจจังที่มีคุณมาคุยด้วยวันนี้ 🌟',
+          'รับทราบฮับผม! โมจิตัวน้อยพร้อมลุยไปด้วยกัน ✨'
+        ];
+        reply = genericReplies[Math.floor(Math.random() * genericReplies.length)];
+      }
+
+      say(reply, 4000);
+    });
+
+    // Direct Stage Touch / Click
+    stageArea.addEventListener('click', (e) => {
+      // Ignore if click originated from buttons/inputs
+      if (e.target.closest('button') || e.target.closest('input')) return;
+      petMascot();
+    });
+
+    // Buttons
+    btnPet.addEventListener('click', (e) => { e.stopPropagation(); petMascot(); });
+    btnFeed.addEventListener('click', (e) => { e.stopPropagation(); feedMascot(); });
+    btnTickle.addEventListener('click', (e) => { e.stopPropagation(); tickleMascot(); });
+    btnSleep.addEventListener('click', (e) => { e.stopPropagation(); toggleSleep(); });
+
+    // Sound toggle
+    soundToggleBtn.addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      if (state.soundEnabled) {
+        soundIconOn.classList.remove('hidden');
+        soundIconOff.classList.add('hidden');
+        playSound('happy');
+      } else {
+        soundIconOn.classList.add('hidden');
+        soundIconOff.classList.remove('hidden');
+      }
+    });
+
+    // Reset status
+    resetMascotBtn.addEventListener('click', () => {
+      state.happiness = 80;
+      state.energy = 90;
+      state.fullness = 70;
+      if (state.isSleeping) wakeUp();
+      updateMeters();
+      say('รีเซ็ตความสดชื่นเรียบร้อยฮับผม! ✨');
+      playSound('wake');
+    });
+
+    // Passive Status Decay & Loop
+    setInterval(() => {
+      if (state.isSleeping) {
+        state.energy = Math.min(100, state.energy + 1.2);
+        state.fullness = Math.max(0, state.fullness - 0.4);
+      } else {
+        state.energy = Math.max(0, state.energy - 0.4);
+        state.fullness = Math.max(0, state.fullness - 0.6);
+        state.happiness = Math.max(0, state.happiness - 0.3);
+      }
+      updateMeters();
+    }, 4000);
+
+    // Initial load
+    updateMeters();
+  </script>
+</body>
+</html>
